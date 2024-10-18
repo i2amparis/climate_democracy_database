@@ -1,2 +1,2 @@
-# climate_democracy_database
-An explorer of the climate democracy databased developed by RETOOL project
+# visualiser
+A tool in streamlit to visualise the RETOOL datasets
