@@ -15,7 +15,10 @@ df = pd.read_excel("input_data/202409_climate_democracy_data_clean.xlsx")
 df_meta = pd.read_excel("input_data/202409_climate_democracy_metadata.xlsx",
     sheet_name='Variables', index_col='Variable')
 
-
+st.header('Time Series Visualisation')
+st.markdown('''
+    Select the countries and a desired variable to get the plot of the values over the years, for each selected country.
+    ''')
 # df = df.applymap(lambda x: x.lower() if isinstance(x, str) else x)
 country_values = st.multiselect("Select Country:", df["countryname"].unique())
 # scenario_values = st.multiselect("Select Scenarios:", df["Scenario"].unique())
