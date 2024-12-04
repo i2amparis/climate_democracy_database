@@ -12,7 +12,7 @@ st.markdown('''
     ''')
 
 df = pd.read_excel("input_data/202409_climate_democracy_data_clean.xlsx")
-df_meta = pd.read_excel("input_data/202409_climate_democracy_metadata.xlsx",
+df_meta = pd.read_excel("input_data/climate_democracy_metadata_new.xlsx",
     sheet_name='Variables', index_col='Variable')
 
 st.header('Time Series Visualisation')
