@@ -77,10 +77,16 @@ st.markdown('''
     ''')
 
 # Map Streamlit controls
-variable = st.selectbox(
+variable_map = st.selectbox(
     "Select Variable",
     pivoted_data.columns[2:]  # Skip 'countryname' and 'observation_year'
 )
+
+var_desc_map = (df_meta.loc[variable_map, 'Interpretation'])
+var_source_map = (df_meta.loc[variable_map, 'Source'])
+
+st.markdown(f'**Variable description:** {var_desc_map}')
+st.markdown(f'**Variable source:** {var_source_map}')
 
 year = st.slider(
     "Select Year",
@@ -100,8 +106,8 @@ world_merged = world_df.merge(
 )
 
 # Separate countries with and without data
-world_merged['has_data'] = world_merged[variable].notna()
-world_merged['color_variable'] = world_merged[variable].fillna("No Data")  # Replace NaN with "No Data"
+world_merged['has_data'] = world_merged[variable_map].notna()
+world_merged['color_variable'] = world_merged[variable_map].fillna("No Data")  # Replace NaN with "No Data"
 
 # Create the main map for numeric data
 fig = px.choropleth(
@@ -109,9 +115,9 @@ fig = px.choropleth(
     geojson=world_merged.__geo_interface__,
     locations="NAME",
     featureidkey="properties.NAME",
-    color=variable,  # Continuous scale for numeric data
+    color=variable_map,  # Continuous scale for numeric data
     hover_name="NAME",
-    title=f"{variable} by Country in {year}",
+    title=f"{variable_map} by Country in {year}",
     color_continuous_scale="YlOrRd"
 )
 
@@ -141,7 +147,7 @@ fig.update_geos(
 
 # Control overall layout
 fig.update_layout(
-    title_text=f"{variable} by Country in {year}",
+    title_text=f"{variable_map} by Country in {year}",
     legend_title_text="Legend",
     margin={"r": 0, "t": 50, "l": 0, "b": 0}
 )
