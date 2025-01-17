@@ -11,13 +11,16 @@ def basic_structure():
     on all EU member states and UK since 1990. There are over 100 variables 
     about various topics related to climate action, energy policy, and democratic practices.
     ''')
-    st.header('Time Series Visualisation')
-    st.markdown('''
-    Select the countries and a desired variable to get the plot of the values over the years, for each selected country.
-    ''')
-
 
 @st.cache_resource
+def timeseries_structure():
+    st.header('Time Series Visualisation')
+    st.markdown('''
+                Select the countries and a desired variable to get the plot of the values over the years, for each 
+                selected country.
+                ''')
+
+@st.cache_resource(show_spinner="Fetching data from the database...")
 def load_data_file():
     df = pd.read_excel("data/202409_climate_democracy_data_clean.xlsx", engine='openpyxl')
     return df
@@ -36,8 +39,8 @@ def timeseries_plot(country_values, variable_value):
                          (df["variable"] == variable_value)]
         var_desc = (df_meta.loc[variable_value, 'Interpretation'])
         var_source = (df_meta.loc[variable_value, 'Source'])
-        st.markdown(f'**Variable description:** {var_desc}')
-        st.markdown(f'**Variable source:** {var_source}')
+        st.sidebar.markdown(f'**Variable description:** {var_desc}')
+        st.sidebar.markdown(f'**Variable source:** {var_source}')
 
         if not filtered_df.empty:
             plt.figure(figsize=(10, 6))
@@ -67,12 +70,20 @@ df = load_data_file()
 df_meta = load_metadata_file()
 
 # df = df.applymap(lambda x: x.lower() if isinstance(x, str) else x)
-country_values = st.multiselect("Select Country:", df["countryname"].unique())
+st.header('Time Series Visualisation')
+st.markdown('''
+                Select the countries and a variable of interest from the sidebar to get the plot of the values over the
+                years, for each selected country.
+                ''')
+
+st.sidebar.header(''' Select variable and countries of interest for timeseries visualisation''')
+country_values = st.sidebar.multiselect("Select Country:", df["countryname"].unique())
 # scenario_values = st.multiselect("Select Scenarios:", df["Scenario"].unique())
 # region_values = st.multiselect("Select Regions:", df["Region"].unique())
-variable_value = st.selectbox("Select a Variable:", df["variable"].unique())
+variable_value = st.sidebar.selectbox("Select a Variable:", df["variable"].unique())
 
 timeseries_plot(country_values,variable_value)
+
 
 # ------------ Map Feature Code -------------
 
@@ -80,49 +91,77 @@ import plotly.graph_objects as go
 import plotly.express as px
 import geopandas as gpd
 
+# Streamlit Map interface
+@st.cache_resource
+def map_structure():  # Streamlit Map interface
+    st.header("Interactive Map: Country-Level Data Over Time")
+    st.markdown('''
+                This is a map infographic to present country level data. Select a desired variable from the sidebar and
+                slide the bar through the years to observe the values for each European country in the dataset.
+                ''')
+
 # Transform data for map usage
-pivoted_data = df.pivot(index=['countryname', 'observation_year'], columns='variable', values='value')
-pivoted_data.reset_index(inplace=True)
+@st.cache_resource
+def transform_data_for_map():
+    transformed_data = df.pivot(index=['countryname', 'observation_year'], columns='variable', values='value')
+    transformed_data.reset_index(inplace=True)
+    return transformed_data
+
 
 # Load data from Natural Earth Data site
-shapefile_path = "input_data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp"
-world_df = gpd.read_file(shapefile_path)
+@st.cache_resource
+def countries_dataset():
+    shapefile_path = 'data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp'
+    world_dataframe = gpd.read_file(shapefile_path)
+    return world_dataframe
 
-# Streamlit Map interface
-st.header("Interactive Map: Country-Level Data Over Time")
-st.markdown('''
-    This is a map infographic to present country level data. Select a desired variable and slide the bar through the years to
-     observe the values for each European country in the dataset.
-    ''')
 
+@st.cache_data
+def map_metadata(variable):
+    description = df_meta.loc[variable, 'Interpretation']
+    source = df_meta.loc[variable, 'Source']
+    return description, source
+
+
+@st.cache_data
+def map_filtered_data_per_year(year,_world_dataframe):
+    # Filter data for the selected year
+    filtered_data = pivoted_data[pivoted_data['observation_year'] == year]
+    # Create a dataframe with the country left-joining the world dataset with our dataset
+    merged_datasets = _world_dataframe.merge(
+        filtered_data,
+        left_on="NAME",
+        right_on="countryname",
+        how="left"  # Keep all countries locations from GeoDataFrame
+    )
+    return merged_datasets
+
+
+map_structure()
+pivoted_data = transform_data_for_map()
+world_df = countries_dataset()
+
+st.sidebar.header(''' Select a variable and year of interest for map infographic''')
 # Map Streamlit controls
-variable_map = st.selectbox(
+variable_map = st.sidebar.selectbox(
     "Select Variable",
     pivoted_data.columns[2:]  # Skip 'countryname' and 'observation_year'
 )
 
-var_desc_map = (df_meta.loc[variable_map, 'Interpretation'])
-var_source_map = (df_meta.loc[variable_map, 'Source'])
 
-st.markdown(f'**Variable description:** {var_desc_map}')
-st.markdown(f'**Variable source:** {var_source_map}')
+var_desc_map, var_source_map = map_metadata(variable_map)
+st.sidebar.markdown(f'**Variable description:** {var_desc_map}')
+st.sidebar.markdown(f'**Variable source:** {var_source_map}')
 
-year = st.slider(
+
+year_of_interest = st.sidebar.slider(
     "Select Year",
     int(pivoted_data['observation_year'].min()),
     int(pivoted_data['observation_year'].max())
 )
 
-# Filter data for the selected year
-filtered_data = pivoted_data[pivoted_data['observation_year'] == year]
-
-# Create a dataframe with the country left joining the world dataset with our dataset
-world_merged = world_df.merge(
-    filtered_data,
-    left_on="NAME",
-    right_on="countryname",
-    how="left"  # Keep all countries locations from GeoDataFrame
-)
+# Create a dataframe with the country left-joining the world dataset with our dataset
+world_merged = map_filtered_data_per_year(year_of_interest,world_df)
 
 # Separate countries with and without data
 world_merged['has_data'] = world_merged[variable_map].notna()
@@ -135,9 +174,10 @@ fig = px.choropleth(
     locations="NAME",
     featureidkey="properties.NAME",
     color=variable_map,  # Continuous scale for numeric data
-    hover_name="NAME",
-    title=f"{variable_map} by Country in {year}",
-    color_continuous_scale="YlOrRd"
+    #hover_name="NAME",
+    title=f"{variable_map} by Country in {year_of_interest}",
+    color_continuous_scale="YlOrRd",
+    hover_data={variable_map: ':.0f'},  # Show only the variable with no decimals
 )
 
 # Add countries with "No Data" as a single trace
@@ -166,7 +206,7 @@ fig.update_geos(
 
 # Control overall layout
 fig.update_layout(
-    title_text=f"{variable_map} by Country in {year}",
+    title_text=f"{variable_map} by Country in {year_of_interest}",
     legend_title_text="Legend",
     margin={"r": 0, "t": 50, "l": 0, "b": 0}
 )
