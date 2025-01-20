@@ -22,13 +22,13 @@ def timeseries_structure():
 
 @st.cache_resource(show_spinner="Fetching data from the database...")
 def load_data_file():
-    df = pd.read_excel("data/202409_climate_democracy_data_clean.xlsx", engine='openpyxl')
+    df = pd.read_excel("input_data/202409_climate_democracy_data_clean.xlsx", engine='openpyxl')
     return df
 
 
 @st.cache_resource
 def load_metadata_file():
-    df_meta = pd.read_excel("data/climate_democracy_metadata_new.xlsx",
+    df_meta = pd.read_excel("input_data/climate_democracy_metadata_new.xlsx",
                             sheet_name='Variables', index_col='Variable', engine='openpyxl')
     return df_meta
 
@@ -111,7 +111,7 @@ def transform_data_for_map():
 # Load data from Natural Earth Data site
 @st.cache_resource
 def countries_dataset():
-    shapefile_path = 'data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp'
+    shapefile_path = 'input_data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp'
     world_dataframe = gpd.read_file(shapefile_path)
     return world_dataframe
 
