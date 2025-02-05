@@ -24,7 +24,7 @@ def transform_data_for_map():
 # Load data from Natural Earth Data site
 @st.cache_resource
 def countries_dataset():
-    shapefile_path = 'data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp'
+    shapefile_path = 'input_data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp'
     world_dataframe = gpd.read_file(shapefile_path)
     return world_dataframe
 

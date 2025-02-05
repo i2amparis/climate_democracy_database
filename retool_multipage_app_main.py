@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 
 # Datafiles path definition
-data_path = "data/202409_climate_democracy_data_clean.xlsx"
-metadata_path = "data/climate_democracy_metadata_new.xlsx"
+data_path = "input_data/202409_climate_democracy_data_clean.xlsx"
+metadata_path = "input_data/climate_democracy_metadata_new.xlsx"
 
 # Central page aesthetics
 st.set_page_config(page_title="Climate Democracy Data",
