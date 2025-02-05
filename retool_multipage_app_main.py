@@ -75,6 +75,13 @@ st.sidebar.page_link(timeseries_page,
              label="Time Series Visualisation",
              icon="📈")
 
+st.sidebar.header("Download the full dataset")
+st.sidebar.download_button("Full dataset", data_path)
+st.sidebar.download_button("Metadata file", metadata_path)
+
+st.sidebar.header("Find more about RETOOL")
+st.sidebar.markdown(f"[https://retoolproject.eu/](https://retoolproject.eu/)")
+
 import_data_file()
 import_metadata_file()
 
