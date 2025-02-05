@@ -76,8 +76,11 @@ st.sidebar.page_link(timeseries_page,
              icon="📈")
 
 st.sidebar.header("Download the full dataset")
-st.sidebar.download_button("Full dataset", data_path)
-st.sidebar.download_button("Metadata file", metadata_path)
+
+with open(data_path, 'rb') as f:
+    st.sidebar.download_button("Full dataset", f, file_name='retool_climate_democracy_data.xlsx')
+with open(metadata_path, 'rb') as m:
+    st.sidebar.download_button("Metadata file", m, file_name='retool_climate_democracy_metadata.xlsx')
 
 st.sidebar.header("Find more about RETOOL")
 st.sidebar.markdown(f"[https://retoolproject.eu/](https://retoolproject.eu/)")
