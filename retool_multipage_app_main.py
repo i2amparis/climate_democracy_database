@@ -56,11 +56,11 @@ def import_metadata_file():
         st.session_state[key] = load_metadata_file(metadata_path)
     return st.session_state[key]
 
-timeseries_page = st.Page("retool_multipage_timeseries.py")
+timeseries_page = st.Page("retool_multipage_timeseries2.py")
                           #,
                           #title="Time Series Visualisation",
                           #icon="📈")
-map_page = st.Page("retool_multipage_map.py")
+map_page = st.Page("retool_multipage_map2.py")
                    #,
                    #title="Interactive Map Infographic",
                    #icon="🌍")
