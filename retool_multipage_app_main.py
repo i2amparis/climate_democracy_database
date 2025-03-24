@@ -18,7 +18,7 @@ our understanding of how to address the twin challenges of responding
 to the climate imperative while strengthening and reinvigorating
 democratic governance.
 
-This page is an interactive inference to the RETOOL climate democracy
+This page is an interactive interface to the RETOOL climate democracy
 dataset. The dataset provides information about climate democracy on
 all EU member states and UK since 1990. There are over 100 variables
 about various topics related to climate action, energy policy, and
