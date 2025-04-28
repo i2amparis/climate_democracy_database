@@ -21,7 +21,6 @@ def transform_data_for_map():
     transformed_data.reset_index(inplace=True)
     return transformed_data
 
-
 # Load data from Natural Earth Data site
 @st.cache_resource
 def countries_dataset():
@@ -29,13 +28,11 @@ def countries_dataset():
     world_dataframe = gpd.read_file(shapefile_path)
     return world_dataframe
 
-
 @st.cache_data
 def map_metadata(variable):
     description = df_meta.loc[variable, 'Interpretation']
     source = df_meta.loc[variable, 'Source']
     return description, source
-
 
 @st.cache_data
 def map_filtered_data_per_year(year,_world_dataframe):
@@ -46,12 +43,18 @@ def map_filtered_data_per_year(year,_world_dataframe):
         filtered_data,
         left_on="NAME",
         right_on="countryname",
-        how="left"  
+        how="left"
     )
     return merged_datasets
 
+@st.cache_data
+def get_global_min_max(data):
+    global_min_max = data.groupby('variable')['value'].agg(['min', 'max']).to_dict('index')
+    return global_min_max
+
 pivoted_data = transform_data_for_map()
 world_df = countries_dataset()
+global_variable_ranges = get_global_min_max(df)
 
 def start_animation():
     st.session_state.animation_trigger = True
@@ -62,17 +65,29 @@ def stop_animation():
     st.session_state.playing = False
 
 def update_slider(year):
-    if not st.session_state.playing:
-        st.session_state.animation_year = year
+    #if not st.session_state.playing:
+    st.session_state.animation_year = year
 
-def animate_map(map_placeholder, year_placeholder, variable_map):
+def animate_map(map_placeholder, year_placeholder, variable_map, slider_placeholder):
     max_year = int(pivoted_data['observation_year'].max())
+    min_year = int(pivoted_data['observation_year'].min())
     for year in range(st.session_state.animation_year + 1, max_year + 1):
         if not st.session_state.get("animation_trigger", False):
             break
         st.session_state.animation_year = year
         #year_placeholder.markdown(f"Year: {year}")
         update_map_content(map_placeholder, year, variable_map) #map update.
+        # Update the slider
+        slider_placeholder.empty()
+        with slider_placeholder.container(border=True):
+            st.slider(
+                "**Select Year**",
+                min_year,
+                max_year,
+                value=year,
+                disabled=True,  # Disable during animation
+                key=f'animated_year_slider_{year}' # Unique key for each year
+            )
         time.sleep(0.5)
 
 def update_map_content(map_placeholder, year, variable_map):
@@ -80,14 +95,18 @@ def update_map_content(map_placeholder, year, variable_map):
     world_merged['has_data'] = world_merged[variable_map].notna()
     world_merged['color_variable'] = world_merged[variable_map].fillna("No Data")
 
+    global_min = global_variable_ranges.get(variable_map, {}).get('min')
+    global_max = global_variable_ranges.get(variable_map, {}).get('max')
+
     fig = px.choropleth(
         world_merged[world_merged['has_data']],
         geojson=world_merged.__geo_interface__,
         locations="NAME",
         featureidkey="properties.NAME",
         color=variable_map,
-        title=f"{variable_map} by Country in {year}",
+        #title=f"{variable_map} by Country in {year}",
         color_continuous_scale="YlOrRd",
+        range_color=[global_min, global_max] if global_min is not None and global_max is not None else None,
         hover_data={variable_map: ':.0f'},
     )
 
@@ -109,8 +128,8 @@ def update_map_content(map_placeholder, year, variable_map):
     )
 
     fig.update_geos(center={"lat": 54.5260, "lon": 15.2551}, projection_scale=4)
-    fig.update_layout(title_text=f"{variable_map} by Country in {year}",
-                        legend_title_text="Legend", margin={"r": 0, "t": 50, "l": 0, "b": 0})
+    #fig.update_layout(title_text=f"{variable_map} by Country in {year}",
+     #                   legend_title_text="Legend", margin={"r": 0, "t": 50, "l": 0, "b": 0})
     map_placeholder.plotly_chart(fig, use_container_width=True)
 
 def map_generation():
@@ -123,14 +142,21 @@ def map_generation():
     if 'playing' not in st.session_state:
         st.session_state.playing = False
 
-    var_selectbox, year_slider_col, button_col = st.columns([2, 2, 1])
+    var_selectbox, year_slider_col = st.columns([4, 2])
+    desc_source_placeholder = st.empty()
 
     with var_selectbox:
         with st.container(border=True):
             variable_map = st.selectbox("**Select Variable:**", df["variable"].unique())
+            var_desc_map, var_source_map = map_metadata(variable_map)
+            st.markdown(f'**Variable description:** {var_desc_map}')
+            st.markdown(f'**Variable source:** {var_source_map}')
+            #desc_source_placeholder.write(f'**Variable description:** {var_desc_map}')
+            #desc_source_placeholder.markdown(f'**Variable source:** {var_source_map}')
 
     with year_slider_col:
-        with st.container(border=True):
+        slider_placeholder = st.empty()
+        with slider_placeholder.container(border=True):
             st.slider(
                 "**Select Year**",
                 int(pivoted_data['observation_year'].min()),
@@ -141,14 +167,13 @@ def map_generation():
                 on_change=lambda: update_slider(st.session_state.get("year_slider"))
             )
 
-    with button_col:
         st.markdown('**Animation:**')
         if st.session_state.playing:
-           if st.button("Stop", on_click=stop_animation):
-               st.session_state.playing = False
+            if st.button("❚❚", on_click=stop_animation):
+                st.session_state.playing = False
         else:
-           if st.button("Play", on_click=start_animation):
-               st.session_state.playing = True
+            if st.button("▶", on_click=start_animation):
+                st.session_state.playing = True
 
     map_placeholder = st.empty()
     year_placeholder = st.empty()
@@ -156,15 +181,14 @@ def map_generation():
 
     try:
         update_map_content(map_placeholder, st.session_state.animation_year, variable_map)
-
-        var_desc_map, var_source_map = map_metadata(variable_map)
-        st.markdown(f'**Variable description:** {var_desc_map}')
+        #var_desc_map, var_source_map = map_metadata(variable_map)
+        #st.markdown(f'**Variable description:** {var_desc_map}')
         #desc_source_placeholder.write(f'**Variable description:** {var_desc_map}')
-        desc_source_placeholder.markdown(f'**Variable source:** {var_source_map}')
+        #desc_source_placeholder.markdown(f'**Variable source:** {var_source_map}')
     except KeyError:
         st.warning(f"Sorry, there is no data available for the variable: '{variable_map}'.")
 
     if st.session_state.get("animation_trigger", False):
-        animate_map(map_placeholder, year_placeholder, variable_map)
+        animate_map(map_placeholder, year_placeholder, variable_map, slider_placeholder)
 
 map_generation()
