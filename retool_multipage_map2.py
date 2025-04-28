@@ -142,7 +142,7 @@ def map_generation():
     if 'playing' not in st.session_state:
         st.session_state.playing = False
 
-    var_selectbox, year_slider_col, button_col = st.columns([2, 2, 1])
+    var_selectbox, year_slider_col = st.columns([4, 2])
     desc_source_placeholder = st.empty()
 
     with var_selectbox:
@@ -167,7 +167,6 @@ def map_generation():
                 on_change=lambda: update_slider(st.session_state.get("year_slider"))
             )
 
-    with button_col:
         st.markdown('**Animation:**')
         if st.session_state.playing:
             if st.button("❚❚", on_click=stop_animation):
